@@ -1,0 +1,17 @@
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+#pencil-icon {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    font-size: 24px; /* Adjust size as needed */
+    cursor: pointer;
+    z-index: 1000; /* Ensure it appears above other elements */
+    background-color: #b6b6b6; /* Light background for visibility */
+    border-radius: 50%; /* Circular icon */
+    padding: 10px; /* Space around the icon */
+  }
