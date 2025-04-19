@@ -1,15 +1,28 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
-    <div id="pencil-icon">
+    <link rel="stylesheet" href="style.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.9.1/gsap.min.js"></script>
+  </head>
+  <body>
+    <div id="dock-ui">
+      <button id="pencil-button" class="dock-button" title="Draw Rectangle">
         ✏️
+      </button>
+      <button id="toggle-camera" class="dock-button" title="Switch View">
+        3D
+      </button>
+      <button
+        id="reset-camera"
+        class="dock-button disabled"
+        title="Reset Camera"
+      >
+        📷
+      </button>
     </div>
     <script type="module" src="index.js"></script>
-</body>
+  </body>
 </html>
