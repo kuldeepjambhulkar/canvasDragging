@@ -70,7 +70,7 @@ function initCamera() {
     1,
     1000
   );
-  camera.position.z = 400;
+  camera.position.set(0, 0, 400);
 }
 
 // Initialize the renderer
@@ -367,7 +367,8 @@ function initPerspectiveCamera() {
     0.1, // Near clipping plane
     5000 // Far clipping plane
   );
-  perspectiveCamera.position.set(0, 0, 500); // Set the camera position
+  perspectiveCamera.up.set(0, 0, 1);
+  perspectiveCamera.position.set(0, -1200, 500); // Set the camera position
 }
 
 // Initialize OrbitControls
@@ -376,8 +377,6 @@ function initOrbitControls() {
   orbitControls.enableDamping = true; // Enable damping for smoother controls
   orbitControls.dampingFactor = 0.05; // Adjust damping factor
   orbitControls.enableZoom = true; // Allow zooming
-  orbitControls.enabled = false; // Disable by default
-
   orbitControls.enabled = false; // Disable by default
 }
 
@@ -394,7 +393,7 @@ function toggleCamera() {
       1,
       1000
     );
-    camera.position.z = 400; // Reset OrthographicCamera position
+    camera.position.set(0, 0, 400); // Reset OrthographicCamera position
     orbitControls.enabled = false; // Disable OrbitControls
 
     // Change rectangle back to 2D (PlaneGeometry)
@@ -413,7 +412,7 @@ function toggleCamera() {
     document.getElementById("reset-camera").classList.add("disabled");
   } else {
     camera = perspectiveCamera; // Switch to PerspectiveCamera
-    camera.position.set(0, -1000, 50); // Position the camera to look across the horizon
+    camera.position.set(0, -1200, 500); // Position the camera to look across the horizon
     camera.lookAt(rectangle.position); // Make the camera look at the rectangle
     orbitControls.enabled = true; // Enable OrbitControls
 
@@ -474,7 +473,7 @@ function addAxisHelper() {
 
 function resetPerspectiveCamera() {
   // Reset the perspective camera to its original settings
-  camera.position.set(0, -1000, 50); // Position the camera to look across the horizon
+  camera.position.set(0, -1200, 500); // Position the camera to look across the horizon
   camera.lookAt(rectangle.position); // Make the camera look at the rectangle
   perspectiveCamera.updateProjectionMatrix(); // Update the projection matrix
 
