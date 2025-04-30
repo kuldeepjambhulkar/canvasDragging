@@ -326,12 +326,28 @@ function addAxisHelper() {
 function resetPerspectiveCamera() {
   // Reset the perspective camera to its original settings
   camera.position.set(0, -1200, 500); // Position the camera to look across the horizon
-  camera.lookAt(rectangle.position); // Make the camera look at the rectangle
+
+  if (rectangles.length > 0) {
+    const center = new THREE.Vector3();
+    rectangles.forEach((rect) => center.add(rect.rectangle.position));
+    center.divideScalar(rectangles.length); // Calculate the average position
+    camera.lookAt(center); // Look at the center of all rectangles
+  } else {
+    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Default to the origin if no rectangles exist
+  }
+
   perspectiveCamera.updateProjectionMatrix(); // Update the projection matrix
 
   // If OrbitControls is enabled, reset its target
   if (orbitControls) {
-    orbitControls.target.set(0, 0, 0); // Reset the target to the origin
+    if (rectangles.length > 0) {
+      const center = new THREE.Vector3();
+      rectangles.forEach((rect) => center.add(rect.rectangle.position));
+      center.divideScalar(rectangles.length); // Calculate the average position
+      orbitControls.target.copy(center); // Set OrbitControls target to the center
+    } else {
+      orbitControls.target.set(0, 0, 0); // Default to the origin
+    }
     orbitControls.update(); // Update the controls
   }
 }
