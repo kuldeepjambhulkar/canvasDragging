@@ -159,44 +159,6 @@ function addDragControls() {
   });
 }
 
-function addHoverEffect() {
-  let lastHoveredRectangle = null; // Track the last hovered rectangle
-
-  window.addEventListener("mousemove", (event) => {
-    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
-    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
-
-    raycaster.setFromCamera(mouse, camera);
-
-    const intersects = raycaster.intersectObjects(
-      rectangles.map((rect) => rect.rectangle)
-    );
-
-    if (intersects.length > 0) {
-      const hoveredRectangle = rectangles.find(
-        (rect) => rect.rectangle === intersects[0].object
-      );
-
-      if (hoveredRectangle !== lastHoveredRectangle) {
-        // Remove hover dots from the previously hovered rectangle
-        if (lastHoveredRectangle) {
-          lastHoveredRectangle.removeHoverDots();
-        }
-
-        // Show hover dots for the newly hovered rectangle
-        hoveredRectangle.showHoverDots(scene);
-        lastHoveredRectangle = hoveredRectangle; // Update the last hovered rectangle
-      }
-    } else {
-      // If no rectangle is hovered, remove hover dots from the last hovered rectangle
-      if (lastHoveredRectangle) {
-        lastHoveredRectangle.removeHoverDots();
-        lastHoveredRectangle = null; // Reset the last hovered rectangle
-      }
-    }
-  });
-}
-
 // =====================================
 function addMouseClickListener() {
   raycaster = new THREE.Raycaster();
@@ -362,7 +324,6 @@ function init() {
   addRectangle();
   addMouseClickListener();
   addDragControls();
-  addHoverEffect();
   addZoomControls();
   //addAxisHelper();
   animate();
