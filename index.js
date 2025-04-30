@@ -3,10 +3,11 @@ import { OrbitControls } from "https://cdn.jsdelivr.net/npm/three@0.124/examples
 import { Rectangle } from "./Rectangle.js";
 
 let scene, camera, renderer, raycaster, mouse, perspectiveCamera, orbitControls;
-let isDragging = false; // Track if any rectangle is being dragged
-let dragOffset = new THREE.Vector3(); // Offset between the rectangle and the mouse
+let draggingRectangle = null; // Track the rectangle being dragged
+let dragOffset = new THREE.Vector3(); // Offset between mouse and rectangle position
 let isUsingOrthographic = true; // Track which camera is currently active
 let rectangles = []; // Array to store all rectangle instances
+let draggingDot = null;
 
 // Initialize the scene
 function initScene() {
@@ -113,9 +114,30 @@ function addRectangle() {
   rectangles.push(newRectangle);
 }
 
-// Add event listeners for dragging
-function addDragControls() {
-  let selectedRectangle = null;
+function addHoverAndDragControls() {
+  // Show dots
+  window.addEventListener("mousemove", (event) => {
+    mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+    raycaster.setFromCamera(mouse, camera);
+
+    // Check for hover over rectangles
+    const intersects = raycaster.intersectObjects(
+      rectangles.map((rect) => rect.rectangle)
+    );
+
+    rectangles.forEach((rect) => rect.hideDots()); // Hide all dots by default
+
+    if (intersects.length > 0) {
+      const hoveredRectangle = rectangles.find(
+        (rect) => rect.rectangle === intersects[0].object
+      );
+      if (hoveredRectangle) {
+        hoveredRectangle.showDots(); // Show dots for the hovered rectangle
+      }
+    }
+  });
 
   window.addEventListener("mousedown", (event) => {
     mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -123,39 +145,115 @@ function addDragControls() {
 
     raycaster.setFromCamera(mouse, camera);
 
-    const intersects = raycaster.intersectObjects(
+    // Check for click on dots
+    const dotIntersects = raycaster.intersectObjects(
+      rectangles.flatMap((rect) => [rect.leftDot, rect.rightDot])
+    );
+
+    if (dotIntersects.length > 0) {
+      draggingDot = dotIntersects[0].object; // Start dragging the clicked dot
+      return;
+    }
+
+    // Check for click on rectangles
+    const rectIntersects = raycaster.intersectObjects(
       rectangles.map((rect) => rect.rectangle)
     );
 
-    if (intersects.length > 0) {
-      selectedRectangle = rectangles.find(
-        (rect) => rect.rectangle === intersects[0].object
+    if (rectIntersects.length > 0) {
+      draggingRectangle = rectangles.find(
+        (rect) => rect.rectangle === rectIntersects[0].object
       );
-      isDragging = true;
-      dragOffset
-        .copy(intersects[0].point)
-        .sub(selectedRectangle.rectangle.position);
+
+      if (draggingRectangle) {
+        const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+        const intersectPoint = new THREE.Vector3();
+        raycaster.ray.intersectPlane(planeZ, intersectPoint);
+
+        dragOffset
+          .copy(intersectPoint)
+          .sub(draggingRectangle.rectangle.position);
+      }
     }
   });
 
   window.addEventListener("mousemove", (event) => {
-    if (isDragging && selectedRectangle) {
+    if (draggingDot) {
       mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
       mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
       raycaster.setFromCamera(mouse, camera);
 
-      const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
-      const intersection = new THREE.Vector3();
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const intersectPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(planeZ, intersectPoint);
 
-      raycaster.ray.intersectPlane(plane, intersection);
-      selectedRectangle.drag(intersection, dragOffset);
+      // Update the dragged dot's position
+      draggingDot.position.copy(intersectPoint);
+
+      // Update the rectangle's geometry
+      const rectangle = rectangles.find(
+        (rect) => rect.leftDot === draggingDot || rect.rightDot === draggingDot
+      );
+      if (rectangle) {
+        rectangle.removeBorder(); // Remove the border before updating
+        const left = rectangle.leftDot.position;
+        const right = rectangle.rightDot.position;
+
+        const dx = right.x - left.x;
+        const dy = right.y - left.y;
+        const newWidth = Math.sqrt(dx * dx + dy * dy);
+
+        rectangle.rectangle.geometry.dispose();
+        rectangle.rectangle.geometry = new THREE.PlaneGeometry(
+          newWidth,
+          rectangle.height
+        );
+        rectangle.width = newWidth;
+
+        // Position the rectangle at the midpoint between the two dots
+        rectangle.rectangle.position.set(
+          (left.x + right.x) / 2,
+          (left.y + right.y) / 2,
+          0
+        );
+
+        // Rotate the rectangle to align with the line between the dots
+        const angle = Math.atan2(dy, dx);
+        rectangle.rectangle.rotation.z = angle;
+        rectangle.drawBorder(); // Redraw the border
+      }
+    } else if (draggingRectangle) {
+      mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+      mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+      raycaster.setFromCamera(mouse, camera);
+
+      const planeZ = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+      const intersectPoint = new THREE.Vector3();
+      raycaster.ray.intersectPlane(planeZ, intersectPoint);
+
+      // Update the rectangle's position
+      draggingRectangle.rectangle.position.copy(intersectPoint.sub(dragOffset));
+
+      // Update the positions of the dots
+      const widthHalf = draggingRectangle.width / 2;
+      draggingRectangle.leftDot.position.set(
+        draggingRectangle.rectangle.position.x - widthHalf,
+        draggingRectangle.rectangle.position.y,
+        0
+      );
+      draggingRectangle.rightDot.position.set(
+        draggingRectangle.rectangle.position.x + widthHalf,
+        draggingRectangle.rectangle.position.y,
+        0
+      );
     }
   });
 
   window.addEventListener("mouseup", () => {
-    isDragging = false;
-    selectedRectangle = null;
+    draggingDot = null; // Stop dragging dots
+    draggingRectangle = null; // Stop dragging rectangles
   });
 }
 
@@ -323,7 +421,7 @@ function init() {
   initOrbitControls();
   addRectangle();
   addMouseClickListener();
-  addDragControls();
+  addHoverAndDragControls();
   addZoomControls();
   //addAxisHelper();
   animate();

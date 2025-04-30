@@ -13,12 +13,41 @@ export class Rectangle {
     const material = new THREE.MeshBasicMaterial({ color: 0xb6b6b6 });
     this.rectangle = new THREE.Mesh(geometry, material);
     this.rectangle.position.copy(position);
-
+    this.rectangle.renderOrder = 0;
     // Initialize properties
     this.border = null;
 
+    // Add orange dots
+    const dotGeometry = new THREE.CircleGeometry(5, 32);
+    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+
+    this.leftDot = new THREE.Mesh(dotGeometry, dotMaterial);
+    this.rightDot = new THREE.Mesh(dotGeometry, dotMaterial);
+
+    this.leftDot.position.set(-width / 2, 0, 0);
+    this.rightDot.position.set(width / 2, 0, 0);
+
+    this.leftDot.renderOrder = 1;
+    this.rightDot.renderOrder = 1;
+
+    this.leftDot.visible = false;
+    this.rightDot.visible = false;
+
+    scene.add(this.leftDot);
+    scene.add(this.rightDot);
+
     // Add the rectangle to the scene
     this.scene.add(this.rectangle);
+  }
+
+  showDots() {
+    this.leftDot.visible = true;
+    this.rightDot.visible = true;
+  }
+
+  hideDots() {
+    this.leftDot.visible = false;
+    this.rightDot.visible = false;
   }
 
   // Draw a border around the rectangle
@@ -39,18 +68,6 @@ export class Rectangle {
     if (this.border) {
       this.scene.remove(this.border);
       this.border = null;
-    }
-  }
-
-  // Resize the rectangle
-  resize(newWidth) {
-    this.rectangle.geometry.dispose();
-    this.rectangle.geometry = new THREE.PlaneGeometry(newWidth, this.height);
-    this.width = newWidth;
-
-    // Redraw the border if it exists
-    if (this.border) {
-      this.drawBorder();
     }
   }
 
