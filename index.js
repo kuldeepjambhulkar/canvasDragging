@@ -18,12 +18,12 @@ function initScene() {
 
 // Add a grid helper to the scene
 function addGridHelper() {
-  const gridSize = Math.max(window.innerWidth, window.innerHeight);
-  const divisions = 50;
+  const gridSize = 3000; // Set the grid size to cover more than 1500x1500
+  const divisions = 100; 
   const gridHelper = new THREE.GridHelper(
     gridSize,
     divisions,
-    0xff0000,
+    0x000000,
     0x444444
   );
   gridHelper.position.z = -1;
@@ -56,15 +56,22 @@ function addZoomControls() {
 
 // Initialize the camera
 function initCamera() {
+  const gridSize = 3000; // Match the grid size
+  const aspectRatio = window.innerWidth / window.innerHeight;
+
+  // Set the orthographic camera boundaries to cover the entire grid
+  const viewSize = gridSize / 2; // Half the grid size for proper centering
   camera = new THREE.OrthographicCamera(
-    window.innerWidth / -2,
-    window.innerWidth / 2,
-    window.innerHeight / 2,
-    window.innerHeight / -2,
+    -viewSize * aspectRatio, // left
+    viewSize * aspectRatio, // right
+    viewSize, // top
+    -viewSize, // bottom
     1,
-    1000
+    5000
   );
-  camera.position.set(0, 0, 400);
+
+  camera.position.set(0, 0, 1000); 
+  camera.lookAt(0, 0, 0); 
 }
 
 // Initialize the renderer
@@ -75,14 +82,23 @@ function initRenderer() {
 }
 
 function initPerspectiveCamera() {
+  const gridSize = 3000; // Match the grid size
+  const aspectRatio = window.innerWidth / window.innerHeight;
+
+  // Calculate the field of view (fov) to match the orthographic camera's view size
+  const viewSize = gridSize / 2; // Half the grid size
+  const fov = 2 * Math.atan(viewSize / 1000) * (180 / Math.PI); // Convert radians to degrees
+
   perspectiveCamera = new THREE.PerspectiveCamera(
-    75,
-    window.innerWidth / window.innerHeight,
-    0.1,
+    45, 
+    aspectRatio, 
+    1, 
     5000
   );
+
+  perspectiveCamera.position.set(0, 0, 2000); 
+  perspectiveCamera.lookAt(0, 0, 0);
   perspectiveCamera.up.set(0, 0, 1);
-  perspectiveCamera.position.set(0, -1200, 500);
 }
 
 function initOrbitControls() {
@@ -104,14 +120,40 @@ function onWindowResize() {
 }
 
 // Add a new rectangle to the scene
-function addRectangle() {
-  const newRectangle = new Rectangle(
-    500,
-    30,
-    new THREE.Vector3(0, 0, 0),
-    scene
-  );
-  rectangles.push(newRectangle);
+export function addRectangle(plannerData = null) {
+  if(plannerData) {
+    plannerData.Walls.forEach((wall) => {
+      const dx = wall.x2 - wall.x1;
+      const dy = wall.y2 - wall.y1;
+      const length = Math.sqrt(dx * dx + dy * dy); // Calculate the length of the wall
+      const angle = Math.atan2(dy, dx); // Calculate the angle of the wall
+  
+      // Calculate the midpoint of the wall
+      const midX = (wall.x1 + wall.x2) / 2;
+      const midY = (wall.y1 + wall.y2) / 2;
+  
+      // Create a new rectangle for the wall
+      const newRectangle = new Rectangle(
+        length,
+        30, // Fixed height for the rectangle
+        new THREE.Vector3(midX, midY, 0), // Position at the midpoint
+        scene
+      );
+  
+      // Rotate the rectangle to align with the wall
+      newRectangle.rectangle.rotation.z = angle;
+  
+      rectangles.push(newRectangle); // Add the rectangle to the array
+    });
+  } else {
+    const newRectangle = new Rectangle(
+      500,
+      30,
+      new THREE.Vector3(0, 0, 0),
+      scene
+    );
+    rectangles.push(newRectangle);
+  }
 }
 
 function addHoverAndDragControls() {
@@ -291,7 +333,6 @@ function addHoverAndDragControls() {
   });
 }
 
-// =====================================
 function addMouseClickListener() {
   raycaster = new THREE.Raycaster();
   mouse = new THREE.Vector2();
@@ -332,15 +373,22 @@ function toggleCamera() {
 
   if (isUsingOrthographic) {
     // Switch to OrthographicCamera
+    const gridSize = 3000; // Match the grid size
+    const aspectRatio = window.innerWidth / window.innerHeight;
+
+    // Set the orthographic camera boundaries to cover the entire grid
+    const viewSize = gridSize / 2; // Half the grid size for proper centering
     camera = new THREE.OrthographicCamera(
-      window.innerWidth / -2,
-      window.innerWidth / 2,
-      window.innerHeight / 2,
-      window.innerHeight / -2,
+      -viewSize * aspectRatio, // left
+      viewSize * aspectRatio, // right
+      viewSize, // top
+      -viewSize, // bottom
       1,
-      1000
+      5000 // Far plane to ensure the grid is visible
     );
-    camera.position.set(0, 0, 400); // Reset OrthographicCamera position
+
+    camera.position.set(0, 0, 1000); 
+    camera.lookAt(0, 0, 0); 
     orbitControls.enabled = false; // Disable OrbitControls
 
     // Update all rectangles to 2D (PlaneGeometry)
@@ -359,8 +407,8 @@ function toggleCamera() {
   } else {
     // Switch to PerspectiveCamera
     camera = perspectiveCamera;
-    camera.position.set(0, -1200, 500); // Position the camera to look across the horizon
-    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Make the camera look at the center
+    perspectiveCamera.position.set(0, 0, 4000); // Directly above the center
+    perspectiveCamera.lookAt(0, 0, 0); // Look at the center of the grid
     orbitControls.enabled = true; // Enable OrbitControls
 
     // Update all rectangles to 3D (BoxGeometry)
@@ -380,7 +428,17 @@ function toggleCamera() {
 
   camera.updateProjectionMatrix(); // Update the projection matrix
 }
+function setupLighting() {
+  // Add ambient light for general illumination
+  const ambientLight = new THREE.AmbientLight(0xffffff, 0.5); // Slightly brighter ambient light
+  scene.add(ambientLight);
 
+  // Add a point light to simulate a bulb in the middle of the room
+  const pointLight = new THREE.PointLight(0xffffff, 1, 5000); // Increase intensity to 2
+  pointLight.position.set(0, 0, 800); // Position the light in the middle of the room
+  pointLight.castShadow = true; // Enable shadows
+  scene.add(pointLight);
+}
 // Add an axis helper to the scene
 function addAxisHelper() {
   const axesHelper = new THREE.AxesHelper(200); // Size of the axes helper
@@ -419,29 +477,14 @@ function addAxisHelper() {
 
 function resetPerspectiveCamera() {
   // Reset the perspective camera to its original settings
-  camera.position.set(0, -1200, 500); // Position the camera to look across the horizon
-
-  if (rectangles.length > 0) {
-    const center = new THREE.Vector3();
-    rectangles.forEach((rect) => center.add(rect.rectangle.position));
-    center.divideScalar(rectangles.length); // Calculate the average position
-    camera.lookAt(center); // Look at the center of all rectangles
-  } else {
-    camera.lookAt(new THREE.Vector3(0, 0, 0)); // Default to the origin if no rectangles exist
-  }
+  perspectiveCamera.position.set(0, 0, 4000);
+  perspectiveCamera.lookAt(0, 0, 0); 
 
   perspectiveCamera.updateProjectionMatrix(); // Update the projection matrix
 
   // If OrbitControls is enabled, reset its target
   if (orbitControls) {
-    if (rectangles.length > 0) {
-      const center = new THREE.Vector3();
-      rectangles.forEach((rect) => center.add(rect.rectangle.position));
-      center.divideScalar(rectangles.length); // Calculate the average position
-      orbitControls.target.copy(center); // Set OrbitControls target to the center
-    } else {
       orbitControls.target.set(0, 0, 0); // Default to the origin
-    }
     orbitControls.update(); // Update the controls
   }
 }
@@ -453,7 +496,8 @@ function init() {
   initPerspectiveCamera();
   initRenderer();
   initOrbitControls();
-  addRectangle();
+  // addRectangle();
+  setupLighting();
   addMouseClickListener();
   addHoverAndDragControls();
   addZoomControls();
@@ -482,8 +526,7 @@ document
 
 document
   .getElementById("add-rectangle")
-  .addEventListener("click", addRectangle);
+  .addEventListener("click", () => addRectangle(null));
 
 // Start the application
 init();
-
