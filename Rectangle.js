@@ -10,7 +10,7 @@ export class Rectangle {
 
     // Create the rectangle
     const geometry = new THREE.PlaneGeometry(width, height);
-    const material = new THREE.MeshBasicMaterial({ color: 0xb6b6b6 });
+    const material = new THREE.MeshStandardMaterial({ color: 0xb6b6b6 });
     this.rectangle = new THREE.Mesh(geometry, material);
     this.rectangle.position.copy(position);
     this.rectangle.renderOrder = 0;
@@ -19,7 +19,7 @@ export class Rectangle {
 
     // Add orange dots
     const dotGeometry = new THREE.CircleGeometry(5, 32);
-    const dotMaterial = new THREE.MeshBasicMaterial({ color: 0xffa500 });
+    const dotMaterial = new THREE.MeshStandardMaterial({ color: 0xffa500 });
 
     this.leftDot = new THREE.Mesh(dotGeometry, dotMaterial);
     this.rightDot = new THREE.Mesh(dotGeometry, dotMaterial);
